@@ -3,10 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Topic;
+
+use App\Models\User;
+use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class TopicController extends Controller
 {
+    //impose l'authentification avant d'effectuer les traitements des autre fonctions
+    //toutes les methodes du controller ne sont accesible que on est connecter except
+    //la méthode index et show
+    public function __construct()
+    {
+        $this->middleware('auth')->except(["index","show"]);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -14,7 +26,9 @@ class TopicController extends Controller
      */
     public function index()
     {
-        
+        $topics = Topic::latest()->paginate(10);
+        return view("topics.index", compact("topics"));
+
     }
 
     /**
@@ -24,7 +38,7 @@ class TopicController extends Controller
      */
     public function create()
     {
-        //
+        return view("topics.create");
     }
 
     /**
@@ -35,7 +49,20 @@ class TopicController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        /* $data = $request->validate([
+            "title"=> "required|min:5",
+            "content"=> "required|min:10",
+
+        ]); */
+
+        $id = Auth::user()->id;
+        $topic = new Topic();
+        $topic->title = $request->title;
+        $topic->content = $request->content;
+        $topic->user_id = $id;
+
+        $topic->save();
+        return redirect()->route("topics.show",$topic->id);
     }
 
     /**
@@ -46,7 +73,7 @@ class TopicController extends Controller
      */
     public function show(Topic $topic)
     {
-
+        return view("topics.show", compact("topic"));
     }
 
     /**
@@ -57,7 +84,9 @@ class TopicController extends Controller
      */
     public function edit(Topic $topic)
     {
-        //
+        //si non auth... no accès
+        $this->authorize("update", $topic);
+        return view("topics.edit",compact("topic"));
     }
 
     /**
@@ -69,7 +98,18 @@ class TopicController extends Controller
      */
     public function update(Request $request, Topic $topic)
     {
-        //
+        //si non auth... no accès
+        $this->authorize("update", $topic);
+
+        $id = Auth::user()->id;
+        $topic = Topic::find($request->id);
+        $topic->title = $request->title;
+        $topic->content = $request->content;
+        $topic->user_id =  $id;
+
+        $topic->save();
+        return redirect()->route("topics.show", $topic->id);
+
     }
 
     /**
@@ -80,6 +120,10 @@ class TopicController extends Controller
      */
     public function destroy(Topic $topic)
     {
-        //
+        //si non auth... no accès
+        $this->authorize("delete", $topic);
+
+        Topic::destroy($topic->id);
+        return redirect("/");
     }
 }

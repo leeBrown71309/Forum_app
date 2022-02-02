@@ -25,7 +25,5 @@ class HomeController extends Controller
     public function index()
     {
 
-        $topics = Topic::latest()->paginate(10);
-        return view("topics.index", compact("topics"));
     }
 }
